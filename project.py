@@ -8,8 +8,8 @@ from datetime import datetime
 # Database Configuration
 # NOTE: Please update these credentials as needed for your local environment
 DB_CONFIG = {
-    'user': 'root',         # Replace with your MySQL username
-    'password': 'ROBOT2017lel!!', # Replace with your MySQL password
+    'user': '***',         # Replace with your MySQL username
+    'password': '***', # Replace with your MySQL password
     'host': 'localhost',
     'database': 'cs122a_project', # Default database name
     'raise_on_warnings': True
@@ -177,20 +177,18 @@ def import_data(folder_name):
         print("Fail")
         print(e) # Debugging
 
-# 2. Insert Agent Client
+# 2. Insert Agent Client -> Currently working!
 def insert_agent_client(uid, username, email, card_number, card_holder, expiration_date, cvv, zip_code, interests):
     try:
         cnx = get_connection()
         cursor = cnx.cursor()
         
-        # Insert into AgentClient
         add_client = ("INSERT INTO AgentClient "
                       "(uid, username, email, zip, interests) "
                       "VALUES (%s, %s, %s, %s, %s)")
         client_data = (uid, username, email, zip_code, interests)
         cursor.execute(add_client, client_data)
         
-        # Insert into PaymentMethod
         add_card = ("INSERT INTO PaymentMethod "
                     "(card_number, card_holder, expiration_date, cvv, uid) "
                     "VALUES (%s, %s, %s, %s, %s)")
@@ -227,19 +225,13 @@ def delete_base_model(bmid):
         cnx = get_connection()
         cursor = cnx.cursor()
         
-        # Cascading delete should handle related records if configured, 
-        # but we configured ON DELETE CASCADE in DDL.
         query = "DELETE FROM BaseModel WHERE bmid = %s"
         cursor.execute(query, (bmid,))
         
-        # Check if row was deleted?
         if cursor.rowcount > 0:
             cnx.commit()
             print("Success")
         else:
-            # If ID doesn't exist, is it fail or success? Usually success if it's gone.
-            # But prompt implies managing platform. Let's say Success.
-            # Wait, if it fails to delete (e.g. error), it's Fail.
             print("Success") # Assuming idempotent or handled
             
         cursor.close()
@@ -261,7 +253,6 @@ def list_internet_service(bmid):
         
         cursor.execute(query, (bmid,))
         
-        # Print results comma separated
         rows = cursor.fetchall()
         for row in rows:
             print(','.join(map(str, row)))
@@ -276,15 +267,6 @@ def count_customized_model(bmid):
     try:
         cnx = get_connection()
         cursor = cnx.cursor()
-        
-        # For "each base model id", but input is specific bmid?
-        # The prompt says: "Input: ... [bmid:int]".
-        # "For each base model id, count ... Sort the results ...".
-        # This wording "For each base model id" suggests grouping all?
-        # But the input asks for a specific `bmid`.
-        # Example: `python3 project.py countCustomizedModel 30`
-        # Output: `Table: bmid, description, customizedModelCount`
-        # If input is a single bmid, we just return that one.
         
         query = ("SELECT b.bmid, b.description, COUNT(c.mid) "
                  "FROM BaseModel b "
@@ -332,10 +314,7 @@ def list_base_model_keyword(keyword):
     try:
         cnx = get_connection()
         cursor = cnx.cursor()
-        
-        # "utilizing LLM services whose domain contains the keyword"
-        # "List 5 base models ... Sort by bmid ASC"
-        
+                
         search_term = f"%{keyword}%"
         
         query = ("SELECT DISTINCT b.bmid, i.sid, i.provider, i.domain "
@@ -377,14 +356,12 @@ def debug_show_all_tables():
         cnx = get_connection()
         cursor = cnx.cursor()
 
-        # Get list of tables in the current database
         cursor.execute("SHOW TABLES")
         tables = [row[0] for row in cursor.fetchall()]
 
         for table in tables:
             print(f"\n{table}:")
             
-            # Query entire table
             cursor.execute(f"SELECT * FROM {table}")
             rows = cursor.fetchall()
 
