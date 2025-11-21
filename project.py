@@ -8,8 +8,8 @@ from datetime import datetime
 # Database Configuration
 # NOTE: Please update these credentials as needed for your local environment
 DB_CONFIG = {
-    'user': 'test',         # Replace with your MySQL username
-    'password': 'password', # Replace with your MySQL password
+    'user': 'root',         # Replace with your MySQL username
+    'password': 'ROBOT2017lel!!', # Replace with your MySQL password
     'host': 'localhost',
     'database': 'cs122a_project', # Default database name
     'raise_on_warnings': True
@@ -23,22 +23,22 @@ TABLES = {}
 
 TABLES['AgentClient'] = (
     "CREATE TABLE `AgentClient` ("
-    "  `uid` int(11) NOT NULL,"
-    "  `username` varchar(255) NOT NULL,"
-    "  `email` varchar(255) NOT NULL,"
-    "  `zip` int(11),"
-    "  `interests` varchar(255),"
+    "  `uid` INT NOT NULL,"
+    "  `username` VARCHAR(255) NOT NULL,"
+    "  `email` VARCHAR(255) NOT NULL,"
+    "  `zip` INT,"
+    "  `interests` VARCHAR(255),"
     "  PRIMARY KEY (`uid`)"
     ") ENGINE=InnoDB"
 )
 
 TABLES['PaymentMethod'] = (
     "CREATE TABLE `PaymentMethod` ("
-    "  `card_number` bigint NOT NULL,"
-    "  `card_holder` varchar(255) NOT NULL,"
-    "  `expiration_date` date NOT NULL,"
-    "  `cvv` int(11) NOT NULL,"
-    "  `uid` int(11) NOT NULL,"
+    "  `card_number` BIGINT NOT NULL,"
+    "  `card_holder` VARCHAR(255) NOT NULL,"
+    "  `expiration_date` DATE NOT NULL,"
+    "  `cvv` INT NOT NULL,"
+    "  `uid` INT NOT NULL,"
     "  PRIMARY KEY (`card_number`),"
     "  FOREIGN KEY (`uid`) REFERENCES `AgentClient` (`uid`) ON DELETE CASCADE"
     ") ENGINE=InnoDB"
@@ -46,16 +46,16 @@ TABLES['PaymentMethod'] = (
 
 TABLES['BaseModel'] = (
     "CREATE TABLE `BaseModel` ("
-    "  `bmid` int(11) NOT NULL,"
-    "  `description` varchar(255),"
+    "  `bmid` INT NOT NULL,"
+    "  `description` VARCHAR(255),"
     "  PRIMARY KEY (`bmid`)"
     ") ENGINE=InnoDB"
 )
 
 TABLES['CustomizedModel'] = (
     "CREATE TABLE `CustomizedModel` ("
-    "  `mid` int(11) NOT NULL,"
-    "  `bmid` int(11) NOT NULL,"
+    "  `mid` INT NOT NULL,"
+    "  `bmid` INT NOT NULL,"
     "  PRIMARY KEY (`mid`),"
     "  FOREIGN KEY (`bmid`) REFERENCES `BaseModel` (`bmid`) ON DELETE CASCADE"
     ") ENGINE=InnoDB"
@@ -63,18 +63,18 @@ TABLES['CustomizedModel'] = (
 
 TABLES['InternetService'] = (
     "CREATE TABLE `InternetService` ("
-    "  `sid` int(11) NOT NULL,"
-    "  `endpoint` varchar(255),"
-    "  `provider` varchar(255),"
-    "  `domain` varchar(255),"
+    "  `sid` INT NOT NULL,"
+    "  `endpoint` VARCHAR(255),"
+    "  `provider` VARCHAR(255),"
+    "  `domain` VARCHAR(255),"
     "  PRIMARY KEY (`sid`)"
     ") ENGINE=InnoDB"
 )
 
 TABLES['Utilizes'] = (
     "CREATE TABLE `Utilizes` ("
-    "  `bmid` int(11) NOT NULL,"
-    "  `sid` int(11) NOT NULL,"
+    "  `bmid` INT NOT NULL,"
+    "  `sid` INT NOT NULL,"
     "  PRIMARY KEY (`bmid`, `sid`),"
     "  FOREIGN KEY (`bmid`) REFERENCES `BaseModel` (`bmid`) ON DELETE CASCADE,"
     "  FOREIGN KEY (`sid`) REFERENCES `InternetService` (`sid`) ON DELETE CASCADE"
@@ -83,11 +83,11 @@ TABLES['Utilizes'] = (
 
 TABLES['Configuration'] = (
     "CREATE TABLE `Configuration` ("
-    "  `cid` int(11) NOT NULL,"
-    "  `label` varchar(255),"
-    "  `content` varchar(255),"
-    "  `duration` int(11),"
-    "  `uid` int(11) NOT NULL,"
+    "  `cid` INT NOT NULL,"
+    "  `label` VARCHAR(255),"
+    "  `content` VARCHAR(255),"
+    "  `duration` INT,"
+    "  `uid` INT NOT NULL,"
     "  PRIMARY KEY (`cid`),"
     "  FOREIGN KEY (`uid`) REFERENCES `AgentClient` (`uid`) ON DELETE CASCADE"
     ") ENGINE=InnoDB"
@@ -107,7 +107,7 @@ def get_connection():
             print(err)
         sys.exit(1)
 
-# 1. Import data
+# 1. Import data -> CURRENTLY WORKING: had to fix the schemas to not use old formatting and also took care of case if table doesn't exist before hand
 def import_data(folder_name):
     # Connect to MySQL Server (not specific DB yet to create it)
     config_no_db = DB_CONFIG.copy()
@@ -119,7 +119,12 @@ def import_data(folder_name):
         
         # Create Database if not exists
         db_name = DB_CONFIG['database']
-        cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
+        
+        try:
+            cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
+        except mysql.connector.Error:
+            pass
+        
         cursor.execute(f"CREATE DATABASE {db_name}")
         cnx.database = db_name
         
@@ -143,16 +148,8 @@ def import_data(folder_name):
             file_path = os.path.join(folder_name, f"{table_name}.csv")
             if os.path.exists(file_path):
                 with open(file_path, 'r') as csvfile:
-                    # Check if header exists? Prompt implies "Each line represents one record". 
-                    # Usually no header or we should handle it. Assuming NO header based on "Each line represents one record" description usually implies data directly.
-                    # But if there is a header, we might fail on type conversion. 
-                    # We'll assume NO header or simple data.
                     csv_reader = csv.reader(csvfile)
                     
-                    # Prepare INSERT statement
-                    # We need to know the number of columns.
-                    # We can inspect the first row or count from DDL (harder to parse).
-                    # Let's read the first row to determine column count.
                     rows = list(csv_reader)
                     if not rows:
                         continue
@@ -178,7 +175,7 @@ def import_data(folder_name):
         print("Success") # Output Boolean as "Success" or "Fail" per instructions
     except Exception as e:
         print("Fail")
-        # print(e) # Debugging
+        print(e) # Debugging
 
 # 2. Insert Agent Client
 def insert_agent_client(uid, username, email, card_number, card_holder, expiration_date, cvv, zip_code, interests):
@@ -206,9 +203,9 @@ def insert_agent_client(uid, username, email, card_number, card_holder, expirati
         print("Success")
     except mysql.connector.Error as err:
         print("Fail")
-        # print(err)
+        print(err)
 
-# 3. Add a customized model
+# 3. Add a customized model -> CURRENTLY WORKING
 def add_customized_model(mid, bmid):
     try:
         cnx = get_connection()
@@ -250,7 +247,7 @@ def delete_base_model(bmid):
     except mysql.connector.Error as err:
         print("Fail")
 
-# 5. List internet service
+# 5. List internet service -> THIS IS CURRENTLY WORKING
 def list_internet_service(bmid):
     try:
         cnx = get_connection()
@@ -360,6 +357,52 @@ def list_base_model_keyword(keyword):
     except mysql.connector.Error as err:
         pass
 
+def show_tables():
+    try:
+        cnx = get_connection()
+        cursor = cnx.cursor()
+        cursor.execute("SHOW TABLES")
+
+        for row in cursor.fetchall():
+            print(row[0])
+
+        cursor.close()
+        cnx.close()
+        print("Success")
+    except:
+        print("Fail")
+        
+def debug_show_all_tables():
+    try:
+        cnx = get_connection()
+        cursor = cnx.cursor()
+
+        # Get list of tables in the current database
+        cursor.execute("SHOW TABLES")
+        tables = [row[0] for row in cursor.fetchall()]
+
+        for table in tables:
+            print(f"\n{table}:")
+            
+            # Query entire table
+            cursor.execute(f"SELECT * FROM {table}")
+            rows = cursor.fetchall()
+
+            if not rows:
+                print("(empty)")
+            else:
+                for row in rows:
+                    print(','.join(map(str, row)))
+
+        cursor.close()
+        cnx.close()
+
+        print("\nSuccess")
+
+    except Exception as e:
+        print("Fail")
+        print(e)  # uncomment if debugging
+
 def main():
     if len(sys.argv) < 2:
         return
@@ -386,6 +429,9 @@ def main():
         top_n_duration_config(sys.argv[2], sys.argv[3])
     elif command == 'listBaseModelKeyWord':
         list_base_model_keyword(sys.argv[2])
+    elif command == 'showTables':
+        show_tables()
+        debug_show_all_tables()
 
 if __name__ == '__main__':
     main()
