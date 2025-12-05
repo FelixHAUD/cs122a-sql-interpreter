@@ -1,0 +1,13 @@
+sid,provider,endpoints
+1,Local,https://api1.example.com/v1
+2,Anthropic,https://anthropic1.example.com/v1
+3,OpenAI,https://openai1.example.com/v1
+4,Google,https://google1.example.com/v1
+5,Anthropic,https://anthropic2.example.com/v1
+6,OpenAI,https://openai6.example.com/v1
+7,OpenAI,https://openai6.example.com/v1
+8,Local,https://api8.example.com/v1
+9,Google,https://google2.example.com/v1;https://google3.example.com/v1
+10,Anthropic,https://anthropic1.example.com/v1;https://anthropic3.example.com/v1
+11,Anthropic,https://anthropic4.example.com/v1
+12,Local,https://api12.example.com/v1

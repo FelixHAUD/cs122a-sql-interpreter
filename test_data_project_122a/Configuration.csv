@@ -1,0 +1,26 @@
+cid,client_uid,content,labels
+1,13,Config content 1,prod
+2,23,Config content 2,dev
+3,9,Config content 3,prod
+4,10,Config content 4,dev
+5,4,Config content 5,prod
+6,4,Config content 5,prod;test
+7,9,Config content 7,test
+8,10,Config content 8,test
+9,20,Config content 9,test
+10,20,Config content 10,test;dev
+11,9,Config content 14,dev
+12,23,Config content 13,test;prod
+13,18,Config content 13,test;prod
+14,10,Config content 14,prod
+15,3,Config content 1,abtest
+16,4,Config content 16,prod;train
+17,13,Config content 15,dev
+18,1,Config content 18,test
+19,29,Config content 17,test
+20,10,Config content 20,prod
+21,10,Config content 21,dev
+22,17,Config content 22,test;train
+23,29,Config content 20,abtest
+24,21,Config content 24,test
+25,4,Config content 28,prod;dev
