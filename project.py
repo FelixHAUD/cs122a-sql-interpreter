@@ -8,19 +8,19 @@ from datetime import datetime
 # Database Configuration
 # NOTE: Please update these credentials as needed for your local environment
 DB_CONFIG = {
-    'user': 'root',         # Replace with your MySQL username
-    'password': 'sqlPwd26!', # Replace with your MySQL password
+    'user': 'test',         # Replace with your MySQL username
+    'password': 'password', # Replace with your MySQL password
     'host': 'localhost',
-    'database': 'cs122a_project', # Default database name
-    'raise_on_warnings': True
+    'database': 'cs122a', # Default database name
+    'raise_on_warnings': False
 }
 
 # Schema provided in HW2 Solutions
 
 TABLES = {}
 
-TABLES['Users'] = (
-    "CREATE TABLE `Users` ("
+TABLES['User'] = (
+    "CREATE TABLE `User` ("
     "  `uid` INT NOT NULL,"
     "  `email` TEXT NOT NULL,"
     "  `username` TEXT NOT NULL,"
@@ -34,7 +34,7 @@ TABLES['AgentCreator'] = (
     "  `bio` TEXT,"
     "  `payout` TEXT,"
     "  PRIMARY KEY (`uid`),"
-    "  FOREIGN KEY (`uid`) REFERENCES `Users`(`uid`) ON DELETE CASCADE"
+    "  FOREIGN KEY (`uid`) REFERENCES `User`(`uid`) ON DELETE CASCADE"
     ") ENGINE=InnoDB"
 )
 
@@ -44,11 +44,11 @@ TABLES['AgentClient'] = (
     "  `interests` TEXT NOT NULL,"
     "  `cardholder` TEXT NOT NULL,"
     "  `expire` DATE NOT NULL,"
-    "  `cardno` INT NOT NULL,"
+    "  `cardno` BIGINT NOT NULL,"
     "  `cvv` INT NOT NULL,"
     "  `zip` INT NOT NULL,"
     "  PRIMARY KEY (`uid`),"
-    "  FOREIGN KEY (`uid`) REFERENCES `Users`(`uid`) ON DELETE CASCADE"
+    "  FOREIGN KEY (`uid`) REFERENCES `User`(`uid`) ON DELETE CASCADE"
     ") ENGINE=InnoDB"
 )
 
@@ -147,30 +147,16 @@ def get_connection():
             print(err)
         sys.exit(1)
 
-# 1. Import data -> CURRENTLY WORKING: had to fix the schemas to not use old formatting and also took care of case if table doesn't exist before hand
+# 1. Import data
 def import_data(folder_name):
-    # Connect to MySQL Server (not specific DB yet so we can drop/create it)
-    config_no_db = DB_CONFIG.copy()
-    del config_no_db['database']
-
     try:
-        cnx = mysql.connector.connect(**config_no_db)
+        # Connect directly to the existing database
+        cnx = mysql.connector.connect(**DB_CONFIG)
         cursor = cnx.cursor()
-
-        #create db
-        db_name = DB_CONFIG['database']
-
-        try:
-            cursor.execute(f"DROP DATABASE IF EXISTS {db_name}")
-        except mysql.connector.Error:
-            pass
-
-        cursor.execute(f"CREATE DATABASE {db_name}")
-        cnx.database = db_name
 
         # table creation order to make sure foreign key dependencies work
         table_creation_order = [
-            'Users',
+            'User',
             'AgentCreator',
             'AgentClient',
             'BaseModel',
@@ -183,19 +169,18 @@ def import_data(folder_name):
             'ModelConfigurations'
         ]
 
-        #create all tables
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 0")
+
+        for table_name in reversed(table_creation_order):
+            cursor.execute(f"DROP TABLE IF EXISTS `{table_name}`")
+
         for table_name in table_creation_order:
             ddl = TABLES.get(table_name)
             if ddl:
-                try:
-                    cursor.execute(ddl)
-                except mysql.connector.Error as err:
-                    print(f"Failed creating table {table_name}: {err}")
-                    sys.exit(1)
+                cursor.execute(ddl)
 
-        #import csv data
+        # Import csv data
         for table_name in table_creation_order:
-            #print("attempting to create table: ", table_name)
             file_path = os.path.join(folder_name, f"{table_name}.csv")
 
             if not os.path.exists(file_path):
@@ -214,9 +199,11 @@ def import_data(folder_name):
                 if not data_rows:
                     continue
 
-                num_cols = len(data_rows[0])
+                num_cols = len(header)
                 placeholders = ', '.join(['%s'] * num_cols)
-                insert_sql = f"INSERT INTO `{table_name}` VALUES ({placeholders})"
+                # Build INSERT with column names from header to handle any column order
+                columns = ', '.join([f'`{col}`' for col in header])
+                insert_sql = f"INSERT INTO `{table_name}` ({columns}) VALUES ({placeholders})"
 
                 cleaned_rows = []
                 for row in data_rows:
@@ -224,7 +211,10 @@ def import_data(folder_name):
                     cleaned_rows.append(cleaned_row)
 
                 cursor.executemany(insert_sql, cleaned_rows)
-                cnx.commit()
+
+        # Re-enable foreign key checks
+        cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
+        cnx.commit()
 
         cursor.close()
         cnx.close()
@@ -241,9 +231,9 @@ def insert_agent_client(uid, username, email, card_number, card_holder, expirati
         cnx = get_connection()
         cursor = cnx.cursor()
 
-        # 1. Insert into Users
+        # 1. Insert into User
         insert_user = (
-            "INSERT INTO Users (uid, email, username) "
+            "INSERT INTO User (uid, email, username) "
             "VALUES (%s, %s, %s)"
         )
         cursor.execute(insert_user, (uid, email, username))
@@ -294,7 +284,7 @@ def delete_base_model(bmid):
             cnx.commit()
             print("Success")
         else:
-            print("Success") # Assuming idempotent or handled
+            print("Fail")  # bmid doesn't exist
             
         cursor.close()
         cnx.close()
@@ -366,11 +356,12 @@ def top_n_duration_config(uid, n):
         cursor = cnx.cursor()
         
         query = (
-            "SELECT C.client_uid AS uid, C.cid, C.labels AS label, C.content, MC.duration "
+            "SELECT C.client_uid AS uid, C.cid, C.labels AS label, C.content, MAX(MC.duration) AS duration "
             "FROM Configuration C "
             "JOIN ModelConfigurations MC ON C.cid = MC.cid "
             "WHERE C.client_uid = %s "
-            "ORDER BY MC.duration DESC "
+            "GROUP BY C.cid, C.client_uid, C.labels, C.content "
+            "ORDER BY duration DESC "
             "LIMIT %s"
         )
         
