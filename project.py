@@ -6,12 +6,11 @@ from mysql.connector import errorcode
 from datetime import datetime
 
 # Database Configuration
-# NOTE: Please update these credentials as needed for your local environment
 DB_CONFIG = {
-    'user': 'test',         # Replace with your MySQL username
-    'password': 'password', # Replace with your MySQL password
+    'user': 'test',         
+    'password': 'password', 
     'host': 'localhost',
-    'database': 'cs122a', # Default database name
+    'database': 'cs122a', 
     'raise_on_warnings': False
 }
 
@@ -211,7 +210,6 @@ def import_data(folder_name):
 
                 cursor.executemany(insert_sql, cleaned_rows)
 
-        # Re-enable foreign key checks
         cursor.execute("SET FOREIGN_KEY_CHECKS = 1")
         cnx.commit()
 
@@ -222,7 +220,6 @@ def import_data(folder_name):
 
     except Exception as e:
         print("Fail")
-        #print(e)
 
 # 2. Insert Agent Client -> Currently working!
 def insert_agent_client(uid, username, email, card_number, card_holder, expiration_date, cvv, zip_code, interests):
@@ -230,14 +227,13 @@ def insert_agent_client(uid, username, email, card_number, card_holder, expirati
         cnx = get_connection()
         cursor = cnx.cursor()
 
-        # 1. Insert into User (IGNORE if already exists)
+        # IGNORE if already exists
         insert_user = (
             "INSERT IGNORE INTO User (uid, email, username) "
             "VALUES (%s, %s, %s)"
         )
         cursor.execute(insert_user, (uid, email, username))
 
-        # 2. Insert into AgentClient
         insert_client = (
             "INSERT INTO AgentClient (uid, interests, cardholder, expire, cardno, cvv, zip) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s)"
@@ -465,7 +461,6 @@ def debug_show_all_tables():
 
     except Exception as e:
         print("Fail")
-        print(e)  # uncomment if debugging
 
 # helper to run LLM generated sql commands
 def run_sql_command(sql):
