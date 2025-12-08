@@ -231,9 +231,9 @@ def insert_agent_client(uid, username, email, card_number, card_holder, expirati
         cnx = get_connection()
         cursor = cnx.cursor()
 
-        # 1. Insert into User
+        # 1. Insert into User (IGNORE if already exists)
         insert_user = (
-            "INSERT INTO User (uid, email, username) "
+            "INSERT IGNORE INTO User (uid, email, username) "
             "VALUES (%s, %s, %s)"
         )
         cursor.execute(insert_user, (uid, email, username))
