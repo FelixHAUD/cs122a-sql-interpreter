@@ -184,7 +184,7 @@ def import_data(folder_name):
             file_path = os.path.join(folder_name, f"{table_name}.csv")
 
             if not os.path.exists(file_path):
-                continue  # some tables may not have CSVs
+                continue  
 
             with open(file_path, 'r', encoding='utf-8') as csvfile:
                 csv_reader = csv.reader(csvfile)
@@ -201,7 +201,6 @@ def import_data(folder_name):
 
                 num_cols = len(header)
                 placeholders = ', '.join(['%s'] * num_cols)
-                # Build INSERT with column names from header to handle any column order
                 columns = ', '.join([f'`{col}`' for col in header])
                 insert_sql = f"INSERT INTO `{table_name}` ({columns}) VALUES ({placeholders})"
 
@@ -312,7 +311,7 @@ def list_internet_service(bmid):
         cursor.close()
         cnx.close()
     except mysql.connector.Error as err:
-        print("Fail") # Or just empty output? Instructions say "Output: Table..."
+        print("Fail")
 
 # 6. Count customized model
 def count_customized_model(*bmid_list):
@@ -320,10 +319,9 @@ def count_customized_model(*bmid_list):
         cnx = get_connection()
         cursor = cnx.cursor()
 
-        # Convert all elements to integers
+        # convert all elements to integers
         bmid_list = [int(b) for b in bmid_list]
 
-        # SQL must support multiple bmids, so use IN (...)
         placeholders = ','.join(['%s'] * len(bmid_list))
 
         query = (
@@ -338,7 +336,6 @@ def count_customized_model(*bmid_list):
         cursor.execute(query, bmid_list)
         rows = cursor.fetchall()
 
-        # Output format: each row printed as CSV
         for row in rows:
             print(','.join(map(str, row)))
 
@@ -408,51 +405,23 @@ def list_base_model_keyword(keyword):
         print("Fail")
 
 def print_nl2sql_results():
-    """
-    Reads nl2sql_results.csv and prints it in the required table format.
-    The CSV must include the columns:
-        NLquery_id,
-        NLquery,
-        LLM_model_name,
-        prompt,
-        LLM_returned_SQL_id,
-        LLM_returned_SQL_query,
-        SQL_correct,
-        ... plus any error columns
-    """
-
-    csv_path = "NL2SQL_results - Sheet1.csv"
+    csv_path = "NL2SQL_results.csv"
 
     if not os.path.exists(csv_path):
         print("Fail")
-        print("NL2SQL_results - Sheet1.csv not found.")
+        print("NL2SQL_results.csv not found.")
         return
 
     try:
-        with open(csv_path, "r", encoding="utf-8") as f:
+        with open(csv_path, "r") as f:
             reader = csv.reader(f)
-            rows = list(reader)
-
-        if not rows:
-            print("Fail")
-            print("CSV is empty.")
-            return
-
-        header = rows[0]
-        data_rows = rows[1:]
-
-        # Print header
-        print(",".join(header))
-
-        # Print each row
-        for row in data_rows:
-            print(",".join(row))
+            for row in reader:
+                print(",".join(row))
 
         print("Success")
 
     except Exception as e:
         print("Fail")
-        print(e)
 
 def show_tables():
     try:
@@ -498,11 +467,8 @@ def debug_show_all_tables():
         print("Fail")
         print(e)  # uncomment if debugging
 
+# helper to run LLM generated sql commands
 def run_sql_command(sql):
-    """
-    Executes an arbitrary SQL command and prints results as CSV rows.
-    Use only for SELECT queries.
-    """
     print("attempt to run sql command")
     try:
         cnx = get_connection()
@@ -510,9 +476,7 @@ def run_sql_command(sql):
 
         cursor.execute(sql)
         rows = cursor.fetchall()
-        #print(len(rows))
 
-        # Print results as CSV-style output
         for row in rows:
             print(','.join(map(str, row)))
 
@@ -533,10 +497,6 @@ def main():
     if command == 'import':
         import_data(sys.argv[2])
     elif command == 'insertAgentClient':
-        # [uid] [username] [email] [card_number] [card_holder] [expiration_date] [cvv] [zip] [interests]
-        # Example order: 1 “awong” “test@uci.edu” 12345 “Alice Wong” “2020-03-09” 321 92612 “finance;data analysis”
-        # sys.argv: [script, command, uid, username, email, card_number, card_holder, exp_date, cvv, zip, interests]
-        # Indices:    0       1       2      3        4         5            6          7        8    9      10
         insert_agent_client(sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7], sys.argv[8], sys.argv[9], sys.argv[10])
     elif command == 'addCustomizedModel':
         add_customized_model(sys.argv[2], sys.argv[3])
